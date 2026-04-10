@@ -82,6 +82,10 @@ body {
   0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(239,68,68,0.6); }
   50% { opacity: 0.5; box-shadow: 0 0 4px rgba(239,68,68,0.3); }
 }
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(51,153,102,0.6); }
+  50% { opacity: 0.6; box-shadow: 0 0 4px rgba(51,153,102,0.3); }
+}
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -170,24 +174,12 @@ body {
   position: relative;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--surface-1);
-  box-shadow: var(--glow), 0 8px 32px rgba(0,0,0,0.4);
-  border: 1px solid var(--border);
+  background: transparent;
+  box-shadow: none;
+  border: none;
 }
 
-.live-viewport::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: var(--radius-lg);
-  padding: 1px;
-  background: linear-gradient(160deg, rgba(51,153,102,0.3), transparent 40%, transparent 60%, rgba(99,102,241,0.15));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: 3;
-}
+.live-viewport::before { display: none; }
 
 .live-status {
   display: flex;
@@ -199,9 +191,8 @@ body {
 .live-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: #ef4444;
-  box-shadow: 0 0 8px rgba(239,68,68,0.6);
-  animation: pulse 2s ease-in-out infinite;
+  background: var(--text-dim);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .live-status-text {
@@ -213,14 +204,67 @@ body {
   letter-spacing: 0.08em;
 }
 
-.live-viewport img {
+.live-status.is-online .live-dot {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green-glow);
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+.live-status.is-offline .live-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239,68,68,0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.live-status-label--online { color: var(--green); font-weight: 600; }
+.live-status-label--offline { color: #ef4444; font-weight: 600; }
+
+.live-viewport canvas {
   width: 100%;
   display: block;
   cursor: zoom-in;
   transition: filter 0.4s ease;
 }
 
-.live-viewport img:hover { filter: brightness(1.05); }
+.live-viewport canvas:hover { filter: brightness(1.05); }
+
+.offline-placeholder {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--text-dim);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+}
+
+.offline-placeholder svg {
+  width: 48px; height: 48px;
+  opacity: 0.3;
+}
+
+.live-timestamp {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800;
+  color: var(--green);
+  margin-top: 0.6rem;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.live-timestamp-time {
+  display: block;
+  font-size: 0.7em;
+  font-weight: 700;
+  color: var(--text-mid);
+  letter-spacing: 0.02em;
+  margin-top: 0.2em;
+}
 
 .live-expand {
   position: absolute;
@@ -698,10 +742,14 @@ function renderHero() {
           <span class="live-dot"></span>
           <span class="live-status-text">Live &middot; ververst elke 60s</span>
         </div>
+        <div class="live-timestamp" id="live-timestamp"></div>
       </div>
       <div class="live-viewport">
+        <canvas id="live-canvas" onclick="openFullscreen(document.getElementById('live-img').src)"></canvas>
         <img src="${BASE}/image.jpg${cb}" alt="Allsky camera live beeld" id="live-img"
-             onclick="openFullscreen(this.src)">
+             crossorigin="anonymous" style="display:none"
+             onload="processAllskyImage(this)"
+             onerror="showOfflinePlaceholder()">
         <button class="live-expand" onclick="openFullscreen(document.getElementById('live-img').src)" title="Volledig scherm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
@@ -786,6 +834,77 @@ window.switchTab = function(tab) {
   render();
 };
 
+// ── ALLSKY IMAGE PROCESSING ──
+function processAllskyImage(img) {
+  const canvas = document.getElementById('live-canvas');
+  if (!canvas || !img.naturalWidth) return;
+  const w = img.naturalWidth, h = img.naturalHeight;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  try {
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const px = imageData.data;
+    const cx = w / 2, cy = h / 2;
+    const r = Math.min(cx, cy) * 0.945;
+    const rSq = r * r;
+    const cardinalR = w * 0.02;
+    const cardinals = [
+      [cx, h * 0.011],       // S (top)
+      [cx, h * 0.989],       // N (bottom)
+      [w * 0.014, cy],       // E (left)
+      [w * 0.986, cy]        // W (right)
+    ];
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const dx = x - cx, dy = y - cy;
+        const distSq = dx * dx + dy * dy;
+        if (distSq > rSq) {
+          const nearCardinal = cardinals.some(([cx2, cy2]) => {
+            const cdx = x - cx2, cdy = y - cy2;
+            return cdx * cdx + cdy * cdy < cardinalR * cardinalR;
+          });
+          if (!nearCardinal) {
+            const i = (y * w + x) * 4;
+            px[i + 3] = 0;
+          }
+        }
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+  } catch (e) {
+    // CORS or processing error — canvas still shows the drawn image
+  }
+
+  // Remove offline placeholder if present
+  const placeholder = document.querySelector('.offline-placeholder');
+  if (placeholder) placeholder.remove();
+  canvas.style.display = 'block';
+}
+
+function showOfflinePlaceholder() {
+  const canvas = document.getElementById('live-canvas');
+  const viewport = document.querySelector('.live-viewport');
+  if (!canvas || !viewport) return;
+  canvas.style.display = 'none';
+  const ts = document.getElementById('live-timestamp');
+  if (ts) ts.style.display = 'none';
+  if (!viewport.querySelector('.offline-placeholder')) {
+    const div = document.createElement('div');
+    div.className = 'offline-placeholder';
+    div.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4M12 16h.01"/>
+      </svg>
+      <span>Camera offline</span>`;
+    viewport.insertBefore(div, viewport.querySelector('.live-expand'));
+  }
+}
+
 // ── LIVE STATUS & REFRESH ──
 let liveOnline = null;
 
@@ -808,19 +927,31 @@ async function checkLiveStatus() {
 
 function setLiveStatus(online, lastMod) {
   liveOnline = online;
-  const dot = document.querySelector('.live-dot');
+  const status = document.querySelector('.live-status');
   const txt = document.querySelector('.live-status-text');
-  if (!dot || !txt) return;
+  if (!status || !txt) return;
+  status.classList.toggle('is-online', online);
+  status.classList.toggle('is-offline', !online);
+  const ts = document.getElementById('live-timestamp');
   if (online) {
-    dot.style.background = '#ef4444';
-    dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.6)';
     const ago = lastMod ? timeAgo(new Date(lastMod)) : '';
-    txt.innerHTML = `Live${ago ? ' &middot; ' + ago : ''} &middot; ververst elke 60s`;
+    txt.innerHTML = `<span class="live-status-label--online">Live</span>${ago ? ' &middot; ' + ago : ''} &middot; ververst elke 60s`;
+    if (ts && lastMod) {
+      const d = new Date(lastMod);
+      const day = DAYS_NL[d.getDay()];
+      const monthDay = `${d.getDate()} ${MONTHS_NL[d.getMonth()]}`;
+      const time = d.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+      ts.innerHTML = `${day} ${monthDay}<span class="live-timestamp-time">${time}</span>`;
+      ts.style.display = '';
+    }
+    const placeholder = document.querySelector('.offline-placeholder');
+    if (placeholder) placeholder.remove();
+    const canvas = document.getElementById('live-canvas');
+    if (canvas) canvas.style.display = 'block';
   } else {
-    dot.style.background = '#6b7280';
-    dot.style.boxShadow = 'none';
-    dot.style.animation = 'none';
-    txt.innerHTML = 'Offline &middot; camera niet bereikbaar';
+    txt.innerHTML = '<span class="live-status-label--offline">Offline</span> &middot; camera niet bereikbaar';
+    if (ts) ts.style.display = 'none';
+    showOfflinePlaceholder();
   }
 }
 
@@ -833,12 +964,11 @@ function timeAgo(date) {
 }
 
 function refreshLive() {
-  const img = document.getElementById('live-img');
-  if (!img) return;
   const cb = `?t=${Date.now()}`;
   const tmp = new Image();
-  tmp.onload = () => { img.src = tmp.src; checkLiveStatus(); };
-  tmp.onerror = () => { setLiveStatus(false); };
+  tmp.crossOrigin = 'anonymous';
+  tmp.onload = () => { processAllskyImage(tmp); checkLiveStatus(); };
+  tmp.onerror = () => { showOfflinePlaceholder(); setLiveStatus(false); };
   tmp.src = `${BASE}/image.jpg${cb}`;
 }
 
