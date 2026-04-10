@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allsky Camera - Astropolis</title>
+<meta name="description" content="Live allsky camera van Astropolis - sterrenwacht en ruimtevaartmuseum in Oostende. Bekijk de lucht boven Oostende in real-time.">
+<meta property="og:title" content="Allsky Camera - Astropolis">
+<meta property="og:description" content="Live allsky camera - bekijk de lucht boven Oostende.">
+<meta property="og:image" content="https://files.astropolis.be/public/allsky/image.jpg">
+<meta property="og:url" content="https://allsky.astropolis.be">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --green: #339966;
+  --green-glow: rgba(51, 153, 102, 0.35);
+  --surface-0: #0b0e17;
+  --surface-1: #111525;
+  --surface-2: #181d30;
+  --surface-3: #1f2540;
+  --text: #e2e5ef;
+  --text-mid: #9ba2b8;
+  --text-dim: #5c6380;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --glow: 0 0 40px rgba(51,153,102,0.12), 0 0 80px rgba(51,153,102,0.06);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--surface-0);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.bg-ambient,
+.bg-stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bg-ambient {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(51,153,102,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(99,102,241,0.04) 0%, transparent 60%);
+}
+
+.bg-stars {
+  background:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.4) 50%, transparent 50%),
+    radial-gradient(1px 1px at 28% 62%, rgba(255,255,255,0.25) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 52% 12%, rgba(255,255,255,0.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 68% 42%, rgba(255,255,255,0.2) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 82% 72%, rgba(255,255,255,0.3) 50%, transparent 50%),
+    radial-gradient(1px 1px at 22% 78%, rgba(255,255,255,0.15) 50%, transparent 50%),
+    radial-gradient(1px 1px at 42% 52%, rgba(255,255,255,0.25) 50%, transparent 50%),
+    radial-gradient(1px 1px at 88% 22%, rgba(255,255,255,0.2) 50%, transparent 50%),
+    radial-gradient(1px 1px at 62% 88%, rgba(255,255,255,0.2) 50%, transparent 50%),
+    radial-gradient(1px 1px at 8% 48%, rgba(255,255,255,0.25) 50%, transparent 50%),
+    radial-gradient(1px 1px at 38% 32%, rgba(255,255,255,0.15) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 72% 8%, rgba(255,255,255,0.2) 50%, transparent 50%);
+  animation: twinkle 8s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(239,68,68,0.6); }
+  50% { opacity: 0.5; box-shadow: 0 0 4px rgba(239,68,68,0.3); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes imgIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── LAYOUT ── */
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── HEADER ── */
+.header {
+  position: relative;
+  z-index: 2;
+  padding: 1.25rem 0 0;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-row img { height: 44px; width: auto; filter: brightness(1.1); }
+
+.logo-row span {
+  font-family: 'Outfit', sans-serif;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── HERO: side-by-side ── */
+.hero {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  padding: 2.5rem 0 0;
+}
+
+.hero-text h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.hero-text h1 .accent {
+  background: linear-gradient(135deg, var(--green), #4fd1a0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-text p {
+  margin-top: 0.75rem;
+  color: var(--text-mid);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.hero-text .refresh-note {
+  margin-top: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+/* ── LIVE VIEWPORT ── */
+.live-viewport {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-1);
+  box-shadow: var(--glow), 0 8px 32px rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+}
+
+.live-viewport::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius-lg);
+  padding: 1px;
+  background: linear-gradient(160deg, rgba(51,153,102,0.3), transparent 40%, transparent 60%, rgba(99,102,241,0.15));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.live-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239,68,68,0.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.live-status-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.live-viewport img {
+  width: 100%;
+  display: block;
+  cursor: zoom-in;
+  transition: filter 0.4s ease;
+}
+
+.live-viewport img:hover { filter: brightness(1.05); }
+
+.live-expand {
+  position: absolute;
+  bottom: 0.6rem; right: 0.6rem;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.2s;
+}
+
+.live-expand:hover {
+  background: rgba(0,0,0,0.6);
+  border-color: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+.live-expand svg { width: 14px; height: 14px; }
+
+/* ── SECTION DIVIDER ── */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 2.5rem 0 1.25rem;
+}
+
+.section-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+
+.section-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--green);
+  background: rgba(51,153,102,0.1);
+  border: 1px solid rgba(51,153,102,0.15);
+  padding: 0.15rem 0.55rem;
+  border-radius: 20px;
+}
+
+/* ── TAB BAR ── */
+.tab-bar {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.3rem;
+}
+
+.tab-btn {
+  flex: 1;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.tab-btn:hover { color: var(--text-mid); background: rgba(255,255,255,0.03); }
+
+.tab-btn.active {
+  color: #fff;
+  background: var(--green);
+  box-shadow: 0 2px 12px rgba(51,153,102,0.3);
+}
+
+.tab-desc {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── FILE LIST ── */
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.file-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.18s;
+  animation: fadeUp 0.3s ease both;
+}
+
+.file-row:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-2);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.file-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.file-icon.night { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+.file-icon.day { background: rgba(234,179,8,0.15); color: #fbbf24; }
+
+.file-label {
+  min-width: 0;
+}
+
+.file-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 0.1rem;
+}
+
+.file-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.file-badge.night { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+.file-badge.day { background: rgba(234,179,8,0.15); color: #fbbf24; }
+
+.file-size {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ── OVERLAYS ── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  isolation: isolate;
+}
+
+.overlay.active { display: flex; animation: overlayIn 0.2s ease; }
+
+.overlay img {
+  max-width: 94vw;
+  max-height: 94vh;
+  object-fit: contain;
+  border-radius: 6px;
+  animation: imgIn 0.3s ease;
+}
+
+.overlay-close {
+  position: absolute;
+  top: 1.25rem; right: 1.25rem;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.overlay-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+.vid-overlay {
+  flex-direction: column;
+  gap: 0.75rem;
+  cursor: default;
+}
+
+.vid-overlay video {
+  max-width: 92vw;
+  max-height: 82vh;
+  border-radius: 8px;
+  background: #000;
+  animation: imgIn 0.3s ease;
+}
+
+.vid-overlay .vid-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.85rem;
+}
+
+/* ── LOADING ── */
+.state-msg {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.state-msg .spinner {
+  width: 28px; height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center;
+  padding: 2.5rem 1rem 2rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  position: relative;
+  z-index: 2;
+}
+
+.footer a { color: var(--green); text-decoration: none; }
+.footer a:hover { color: #4fd1a0; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 800px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .hero-text { order: 1; }
+  .live-viewport { order: 0; }
+}
+
+@media (max-width: 600px) {
+  .wrap { padding: 0 1rem; }
+  .file-row { grid-template-columns: 1fr auto; gap: 0.5rem; padding: 0.5rem 0.7rem; }
+  .file-badge { display: none; }
+  .file-icon { width: 30px; height: 30px; font-size: 0.75rem; }
+  .file-title { font-size: 0.78rem; }
+  .tab-btn { font-size: 0.75rem; padding: 0.5rem 0.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-ambient"></div>
+<div class="bg-stars"></div>
+
+<header class="header">
+  <div class="wrap">
+    <div class="logo-row">
+      <img src="https://www.astropolis.be/wp-content/uploads/2024/04/Astropolis-logo-wit-doorzichtig.png" alt="Astropolis" loading="eager">
+      <span>Allsky Camera</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap" id="app">
+  <div class="state-msg">
+    <div class="spinner"></div>
+    Laden&hellip;
+  </div>
+</div>
+
+<div class="overlay" id="fs-overlay">
+  <button class="overlay-close" id="fs-close">&times;</button>
+  <img id="fs-img" src="" alt="">
+</div>
+
+<div class="overlay vid-overlay" id="vid-overlay">
+  <button class="overlay-close" id="vid-close">&times;</button>
+  <span class="vid-title" id="vid-title"></span>
+  <video id="vid-player" controls></video>
+</div>
+
+<footer class="footer">
+  <a href="https://www.astropolis.be">astropolis.be</a> &middot; Oostende
+</footer>
+
+<script>
+const BASE = 'https://files.astropolis.be/public/allsky';
+const CACHE_TTL = 5 * 60 * 1000;
+const LIVE_REFRESH = 60 * 1000;
+const app = document.getElementById('app');
+
+const MONTHS_NL = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+const DAYS_NL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+
+const cache = {};
+
+async function cachedFetch(url) {
+  const now = Date.now();
+  if (cache[url] && (now - cache[url].ts) < CACHE_TTL) {
+    return cache[url].data;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  cache[url] = { data: text, ts: now };
+  return text;
+}
+
+function parseFileList(html, subdir) {
+  const files = [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  doc.querySelectorAll('tr').forEach(row => {
+    const link = row.querySelector('td a[href]');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (href.endsWith('/') || href.startsWith('?') || href.startsWith('/')) return;
+    const name = link.textContent.trim();
+    if (!name) return;
+    const cells = row.querySelectorAll('td');
+    const sizeBytes = cells.length >= 3 ? parseInt(cells[2].textContent.trim()) : 0;
+    const size = formatBytes(sizeBytes);
+    files.push({ name, url: `${BASE}/${subdir}/${name}`, size, sizeBytes });
+  });
+  return files;
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function parseDateFromFilename(name) {
+  const m = name.match(/(\d{8})/);
+  if (!m) return null;
+  const s = m[1];
+  return {
+    year: parseInt(s.substring(0, 4)),
+    month: parseInt(s.substring(4, 6)),
+    day: parseInt(s.substring(6, 8)),
+    dateStr: `${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)}`
+  };
+}
+
+function parseTimeOfDay(name) {
+  if (name.includes('_night')) return 'night';
+  if (name.includes('_day')) return 'day';
+  return 'night';
+}
+
+function formatDateLong(d) {
+  const date = new Date(d.year, d.month - 1, d.day);
+  const dayName = DAYS_NL[date.getDay()];
+  return `${dayName} ${d.day} ${MONTHS_NL[d.month - 1]} ${d.year}`;
+}
+
+function formatDateShort(d) {
+  return `${d.day} ${MONTHS_NL[d.month - 1]}`;
+}
+
+// ── OVERLAYS ──
+const fsOverlay = document.getElementById('fs-overlay');
+const fsImg = document.getElementById('fs-img');
+const fsClose = document.getElementById('fs-close');
+const vidOverlay = document.getElementById('vid-overlay');
+const vidPlayer = document.getElementById('vid-player');
+const vidTitle = document.getElementById('vid-title');
+const vidClose = document.getElementById('vid-close');
+
+function openFullscreen(url) {
+  fsImg.src = url;
+  fsOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFullscreen() {
+  fsOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function openVideo(url, title) {
+  vidPlayer.src = url;
+  vidTitle.textContent = title;
+  vidOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  vidPlayer.play();
+}
+
+function closeVideo() {
+  vidOverlay.classList.remove('active');
+  vidPlayer.pause();
+  vidPlayer.src = '';
+  document.body.style.overflow = '';
+}
+
+fsOverlay.addEventListener('click', e => { if (e.target === fsOverlay) closeFullscreen(); });
+fsClose.addEventListener('click', closeFullscreen);
+vidOverlay.addEventListener('click', e => { if (e.target === vidOverlay) closeVideo(); });
+vidClose.addEventListener('click', closeVideo);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeFullscreen(); closeVideo(); }
+});
+
+// ── STATE ──
+let state = {
+  keograms: [],
+  startrails: [],
+  videos: [],
+  activeTab: 'keograms',
+};
+
+// ── RENDER ──
+function renderHero() {
+  const cb = `?t=${Math.floor(Date.now() / LIVE_REFRESH)}`;
+  return `
+    <section class="hero">
+      <div class="hero-text">
+        <h1>De lucht boven <span class="accent">Oostende</span></h1>
+        <p>Live allsky camera van de Astropolis sterrenwacht. Beelden worden elke minuut ververst, dag en nacht.</p>
+        <div class="live-status">
+          <span class="live-dot"></span>
+          <span class="live-status-text">Live &middot; ververst elke 60s</span>
+        </div>
+      </div>
+      <div class="live-viewport">
+        <img src="${BASE}/image.jpg${cb}" alt="Allsky camera live beeld" id="live-img"
+             onclick="openFullscreen(this.src)">
+        <button class="live-expand" onclick="openFullscreen(document.getElementById('live-img').src)" title="Volledig scherm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </button>
+      </div>
+    </section>`;
+}
+
+function enrichFiles(files) {
+  return files.map(f => {
+    const d = parseDateFromFilename(f.name);
+    const tod = parseTimeOfDay(f.name);
+    return { ...f, parsedDate: d, timeOfDay: tod };
+  }).filter(f => f.parsedDate).sort((a, b) => b.parsedDate.dateStr.localeCompare(a.parsedDate.dateStr) || (a.timeOfDay === 'night' ? -1 : 1));
+}
+
+function renderFileRow(f, type, idx) {
+  const d = f.parsedDate;
+  const tod = f.timeOfDay;
+  const todLabel = tod === 'night' ? 'Nacht' : 'Dag';
+  const todIcon = tod === 'night' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+  const dateStr = formatDateLong(d);
+  const isVideo = type === 'videos';
+  const action = isVideo
+    ? `openVideo('${f.url}', '${dateStr} \u2014 ${todLabel}')`
+    : `openFullscreen('${f.url}')`;
+
+  return `<div class="file-row" onclick="${action}" style="animation-delay:${Math.min(idx * 0.03, 0.5)}s">
+    <div class="file-name">
+      <div class="file-icon ${tod}">${isVideo ? '\u{25B6}' : todIcon}</div>
+      <div class="file-label">
+        <div class="file-title">${dateStr}</div>
+        <div class="file-sub">${todLabel}${isVideo ? ' timelapse' : ''}</div>
+      </div>
+    </div>
+    <span class="file-badge ${tod}">${todLabel}</span>
+    <span class="file-size">${f.size}</span>
+  </div>`;
+}
+
+function renderArchive() {
+  const type = state.activeTab;
+  const src = type === 'keograms' ? state.keograms
+            : type === 'startrails' ? state.startrails
+            : state.videos;
+  const files = enrichFiles(src);
+  const total = state.keograms.length + state.startrails.length + state.videos.length;
+
+  const descriptions = {
+    keograms: 'Een keogram vat een hele nacht of dag samen in \u00e9\u00e9n beeld door een smalle strook uit elk frame te nemen.',
+    startrails: 'Star trails tonen de schijnbare beweging van sterren door lange belichtingen samen te voegen.',
+    videos: 'Timelapse opnames van de allsky camera, versneld weergegeven.'
+  };
+
+  return `
+    <div class="section-divider">
+      <span class="section-label">Archief</span>
+      <span class="section-line"></span>
+      <span class="section-count">${total} bestanden</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn${type === 'keograms' ? ' active' : ''}" onclick="switchTab('keograms')">Keogrammen</button>
+      <button class="tab-btn${type === 'startrails' ? ' active' : ''}" onclick="switchTab('startrails')">Star Trails</button>
+      <button class="tab-btn${type === 'videos' ? ' active' : ''}" onclick="switchTab('videos')">Video's</button>
+    </div>
+
+    <p class="tab-desc">${descriptions[type]}</p>
+
+    <div class="file-list">
+      ${files.length > 0
+        ? files.map((f, i) => renderFileRow(f, type, i)).join('')
+        : '<div class="state-msg">Geen bestanden gevonden.</div>'}
+    </div>`;
+}
+
+function render() {
+  app.innerHTML = renderHero() + renderArchive();
+}
+
+window.switchTab = function(tab) {
+  state.activeTab = tab;
+  render();
+};
+
+// ── LIVE STATUS & REFRESH ──
+let liveOnline = null;
+
+async function checkLiveStatus() {
+  try {
+    const res = await fetch(`${BASE}/image.jpg`, { method: 'HEAD', cache: 'no-cache' });
+    if (!res.ok) { setLiveStatus(false); return; }
+    const lastMod = res.headers.get('Last-Modified');
+    if (lastMod) {
+      const age = Date.now() - new Date(lastMod).getTime();
+      const maxAge = 10 * 60 * 1000;
+      setLiveStatus(age < maxAge, lastMod);
+    } else {
+      setLiveStatus(true);
+    }
+  } catch {
+    setLiveStatus(false);
+  }
+}
+
+function setLiveStatus(online, lastMod) {
+  liveOnline = online;
+  const dot = document.querySelector('.live-dot');
+  const txt = document.querySelector('.live-status-text');
+  if (!dot || !txt) return;
+  if (online) {
+    dot.style.background = '#ef4444';
+    dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.6)';
+    const ago = lastMod ? timeAgo(new Date(lastMod)) : '';
+    txt.innerHTML = `Live${ago ? ' &middot; ' + ago : ''} &middot; ververst elke 60s`;
+  } else {
+    dot.style.background = '#6b7280';
+    dot.style.boxShadow = 'none';
+    dot.style.animation = 'none';
+    txt.innerHTML = 'Offline &middot; camera niet bereikbaar';
+  }
+}
+
+function timeAgo(date) {
+  const s = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (s < 60) return 'zojuist';
+  if (s < 3600) return `${Math.floor(s / 60)} min geleden`;
+  if (s < 86400) return `${Math.floor(s / 3600)} uur geleden`;
+  return `${Math.floor(s / 86400)} dagen geleden`;
+}
+
+function refreshLive() {
+  const img = document.getElementById('live-img');
+  if (!img) return;
+  const cb = `?t=${Date.now()}`;
+  const tmp = new Image();
+  tmp.onload = () => { img.src = tmp.src; checkLiveStatus(); };
+  tmp.onerror = () => { setLiveStatus(false); };
+  tmp.src = `${BASE}/image.jpg${cb}`;
+}
+
+setInterval(refreshLive, LIVE_REFRESH);
+
+// ── INIT ──
+async function init() {
+  try {
+    const [keogramHtml, startrailHtml, videoHtml] = await Promise.all([
+      cachedFetch(`${BASE}/keograms/`),
+      cachedFetch(`${BASE}/startrails/`),
+      cachedFetch(`${BASE}/videos/`),
+    ]);
+
+    state.keograms = parseFileList(keogramHtml, 'keograms');
+    state.startrails = parseFileList(startrailHtml, 'startrails');
+    state.videos = parseFileList(videoHtml, 'videos')
+      .filter(f => !f.name.includes('startrail_timelapse'));
+
+    render();
+    checkLiveStatus();
+  } catch (err) {
+    app.innerHTML = `<div class="state-msg">Kon gegevens niet laden.<br><small style="color:var(--text-dim)">${err.message}</small></div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
