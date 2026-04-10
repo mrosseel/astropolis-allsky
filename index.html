@@ -745,12 +745,12 @@ function renderHero() {
         <div class="live-timestamp" id="live-timestamp"></div>
       </div>
       <div class="live-viewport">
-        <canvas id="live-canvas" onclick="openFullscreen(document.getElementById('live-img').src)"></canvas>
+        <canvas id="live-canvas" style="display:none" onclick="openFullscreen(BASE + '/image.jpg?' + Date.now())"></canvas>
         <img src="${BASE}/image.jpg${cb}" alt="Allsky camera live beeld" id="live-img"
              crossorigin="anonymous" style="display:none"
-             onload="processAllskyImage(this)"
-             onerror="showOfflinePlaceholder()">
-        <button class="live-expand" onclick="openFullscreen(document.getElementById('live-img').src)" title="Volledig scherm">
+             onload="processAllskyImage(this); checkLiveStatus()"
+             onerror="setLiveStatus(false)">
+        <button class="live-expand" onclick="openFullscreen(BASE + '/image.jpg?' + Date.now())" title="Volledig scherm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
       </div>
@@ -879,10 +879,6 @@ function processAllskyImage(img) {
     // CORS or processing error — canvas still shows the drawn image
   }
 
-  // Remove offline placeholder if present
-  const placeholder = document.querySelector('.offline-placeholder');
-  if (placeholder) placeholder.remove();
-  canvas.style.display = 'block';
 }
 
 function showOfflinePlaceholder() {
@@ -933,6 +929,9 @@ function setLiveStatus(online, lastMod) {
   status.classList.toggle('is-online', online);
   status.classList.toggle('is-offline', !online);
   const ts = document.getElementById('live-timestamp');
+  const canvas = document.getElementById('live-canvas');
+  const placeholder = document.querySelector('.offline-placeholder');
+
   if (online) {
     const ago = lastMod ? timeAgo(new Date(lastMod)) : '';
     txt.innerHTML = `<span class="live-status-label--online">Live</span>${ago ? ' &middot; ' + ago : ''} &middot; ververst elke 60s`;
@@ -944,13 +943,12 @@ function setLiveStatus(online, lastMod) {
       ts.innerHTML = `${day} ${monthDay}<span class="live-timestamp-time">${time}</span>`;
       ts.style.display = '';
     }
-    const placeholder = document.querySelector('.offline-placeholder');
     if (placeholder) placeholder.remove();
-    const canvas = document.getElementById('live-canvas');
     if (canvas) canvas.style.display = 'block';
   } else {
     txt.innerHTML = '<span class="live-status-label--offline">Offline</span> &middot; camera niet bereikbaar';
     if (ts) ts.style.display = 'none';
+    if (canvas) canvas.style.display = 'none';
     showOfflinePlaceholder();
   }
 }
@@ -989,7 +987,6 @@ async function init() {
       .filter(f => !f.name.includes('startrail_timelapse'));
 
     render();
-    checkLiveStatus();
   } catch (err) {
     app.innerHTML = `<div class="state-msg">Kon gegevens niet laden.<br><small style="color:var(--text-dim)">${err.message}</small></div>`;
   }
