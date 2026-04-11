@@ -475,8 +475,7 @@ body {
 
 .overlay.active { display: flex; animation: overlayIn 0.2s ease; }
 
-.overlay img,
-.overlay canvas {
+.overlay img {
   max-width: 94vw;
   max-height: 94vh;
   object-fit: contain;
@@ -596,7 +595,7 @@ body {
 
 <div class="overlay" id="fs-overlay">
   <button class="overlay-close" id="fs-close">&times;</button>
-  <canvas id="fs-canvas"></canvas>
+  <img id="fs-img" src="" alt="">
 </div>
 
 <div class="overlay vid-overlay" id="vid-overlay">
@@ -687,7 +686,7 @@ function formatDateShort(d) {
 
 // ── OVERLAYS ──
 const fsOverlay = document.getElementById('fs-overlay');
-const fsCanvas = document.getElementById('fs-canvas');
+const fsImg = document.getElementById('fs-img');
 const fsClose = document.getElementById('fs-close');
 const vidOverlay = document.getElementById('vid-overlay');
 const vidPlayer = document.getElementById('vid-player');
@@ -695,12 +694,7 @@ const vidTitle = document.getElementById('vid-title');
 const vidClose = document.getElementById('vid-close');
 
 function openFullscreen() {
-  const src = document.getElementById('live-canvas');
-  if (src && src.width && src.height) {
-    fsCanvas.width = src.width;
-    fsCanvas.height = src.height;
-    fsCanvas.getContext('2d').drawImage(src, 0, 0);
-  }
+  fsImg.src = `${BASE}/image.jpg`;
   fsOverlay.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
