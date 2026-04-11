@@ -135,7 +135,7 @@ body {
   grid-template-columns: 340px 1fr;
   gap: 2.5rem;
   align-items: center;
-  padding: 2.5rem 0 0;
+  padding: 1.5rem 0 0;
 }
 
 .hero-text h1 {
@@ -185,7 +185,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 1.25rem;
 }
 
 .live-dot {
@@ -224,6 +224,11 @@ body {
   display: block;
   cursor: zoom-in;
   transition: filter 0.4s ease;
+}
+
+.live-viewport .canvas-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
 }
 
 .live-viewport canvas:hover { filter: brightness(1.05); }
@@ -470,7 +475,8 @@ body {
 
 .overlay.active { display: flex; animation: overlayIn 0.2s ease; }
 
-.overlay img {
+.overlay img,
+.overlay canvas {
   max-width: 94vw;
   max-height: 94vh;
   object-fit: contain;
@@ -590,7 +596,7 @@ body {
 
 <div class="overlay" id="fs-overlay">
   <button class="overlay-close" id="fs-close">&times;</button>
-  <img id="fs-img" src="" alt="">
+  <canvas id="fs-canvas"></canvas>
 </div>
 
 <div class="overlay vid-overlay" id="vid-overlay">
@@ -681,15 +687,20 @@ function formatDateShort(d) {
 
 // ── OVERLAYS ──
 const fsOverlay = document.getElementById('fs-overlay');
-const fsImg = document.getElementById('fs-img');
+const fsCanvas = document.getElementById('fs-canvas');
 const fsClose = document.getElementById('fs-close');
 const vidOverlay = document.getElementById('vid-overlay');
 const vidPlayer = document.getElementById('vid-player');
 const vidTitle = document.getElementById('vid-title');
 const vidClose = document.getElementById('vid-close');
 
-function openFullscreen(url) {
-  fsImg.src = url;
+function openFullscreen() {
+  const src = document.getElementById('live-canvas');
+  if (src && src.width && src.height) {
+    fsCanvas.width = src.width;
+    fsCanvas.height = src.height;
+    fsCanvas.getContext('2d').drawImage(src, 0, 0);
+  }
   fsOverlay.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -732,7 +743,6 @@ let state = {
 
 // ── RENDER ──
 function renderHero() {
-  const cb = `?t=${Math.floor(Date.now() / LIVE_REFRESH)}`;
   return `
     <section class="hero">
       <div class="hero-text">
@@ -745,12 +755,9 @@ function renderHero() {
         <div class="live-timestamp" id="live-timestamp"></div>
       </div>
       <div class="live-viewport">
-        <canvas id="live-canvas" style="display:none" onclick="openFullscreen(BASE + '/image.jpg?' + Date.now())"></canvas>
-        <img src="${BASE}/image.jpg${cb}" alt="Allsky camera live beeld" id="live-img"
-             crossorigin="anonymous" style="display:none"
-             onload="processAllskyImage(this); checkLiveStatus()"
-             onerror="setLiveStatus(false)">
-        <button class="live-expand" onclick="openFullscreen(BASE + '/image.jpg?' + Date.now())" title="Volledig scherm">
+        <div class="canvas-placeholder" id="canvas-placeholder"></div>
+        <canvas id="live-canvas" style="display:none" onclick="openFullscreen()"></canvas>
+        <button class="live-expand" onclick="openFullscreen()" title="Volledig scherm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
       </div>
@@ -906,16 +913,24 @@ let liveOnline = null;
 
 async function checkLiveStatus() {
   try {
-    const res = await fetch(`${BASE}/image.jpg`, { method: 'HEAD', cache: 'no-cache' });
-    if (!res.ok) { setLiveStatus(false); return; }
-    const lastMod = res.headers.get('Last-Modified');
-    if (lastMod) {
-      const age = Date.now() - new Date(lastMod).getTime();
-      const maxAge = 10 * 60 * 1000;
-      setLiveStatus(age < maxAge, lastMod);
-    } else {
-      setLiveStatus(true);
+    const res = await fetch(`${BASE}/latest_metadata.json`);
+    if (!res.ok) {
+      // Fallback to HEAD on image
+      const head = await fetch(`${BASE}/image.jpg`, { method: 'HEAD' });
+      if (!head.ok) { setLiveStatus(false); return; }
+      const lastMod = head.headers.get('Last-Modified');
+      if (lastMod) {
+        const age = Date.now() - new Date(lastMod).getTime();
+        setLiveStatus(age < 10 * 60 * 1000, lastMod);
+      } else {
+        setLiveStatus(true);
+      }
+      return;
     }
+    const meta = await res.json();
+    const captureTime = new Date(parseInt(meta.time) * 1000);
+    const age = Date.now() - captureTime.getTime();
+    setLiveStatus(age < 10 * 60 * 1000, captureTime.toUTCString());
   } catch {
     setLiveStatus(false);
   }
@@ -945,6 +960,8 @@ function setLiveStatus(online, lastMod) {
     }
     if (placeholder) placeholder.remove();
     if (canvas) canvas.style.display = 'block';
+    const ph = document.getElementById('canvas-placeholder');
+    if (ph) ph.style.display = 'none';
   } else {
     txt.innerHTML = '<span class="live-status-label--offline">Offline</span> &middot; camera niet bereikbaar';
     if (ts) ts.style.display = 'none';
@@ -962,12 +979,11 @@ function timeAgo(date) {
 }
 
 function refreshLive() {
-  const cb = `?t=${Date.now()}`;
   const tmp = new Image();
   tmp.crossOrigin = 'anonymous';
   tmp.onload = () => { processAllskyImage(tmp); checkLiveStatus(); };
   tmp.onerror = () => { showOfflinePlaceholder(); setLiveStatus(false); };
-  tmp.src = `${BASE}/image.jpg${cb}`;
+  tmp.src = `${BASE}/image.jpg`;
 }
 
 setInterval(refreshLive, LIVE_REFRESH);
@@ -987,6 +1003,7 @@ async function init() {
       .filter(f => !f.name.includes('startrail_timelapse'));
 
     render();
+    refreshLive();
   } catch (err) {
     app.innerHTML = `<div class="state-msg">Kon gegevens niet laden.<br><small style="color:var(--text-dim)">${err.message}</small></div>`;
   }
