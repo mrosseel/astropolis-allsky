@@ -624,7 +624,7 @@ async function cachedFetch(url) {
   if (cache[url] && (now - cache[url].ts) < CACHE_TTL) {
     return cache[url].data;
   }
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { 'Accept': 'text/html' } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const text = await res.text();
   cache[url] = { data: text, ts: now };
