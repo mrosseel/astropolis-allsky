@@ -693,8 +693,8 @@ const vidPlayer = document.getElementById('vid-player');
 const vidTitle = document.getElementById('vid-title');
 const vidClose = document.getElementById('vid-close');
 
-function openFullscreen() {
-  fsImg.src = `${BASE}/image.jpg`;
+function openFullscreen(url) {
+  fsImg.src = url || `${BASE}/image.jpg`;
   fsOverlay.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
