@@ -237,18 +237,17 @@ body {
 .cardinal {
   position: absolute;
   font-family: 'Outfit', sans-serif;
-  font-weight: 700;
-  font-size: clamp(0.7rem, 1.8vw, 1rem);
-  color: rgba(255,255,255,0.85);
-  text-shadow: 0 0 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.9);
+  font-weight: 600;
+  font-size: clamp(0.55rem, 1.2vw, 0.75rem);
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.05em;
   pointer-events: none;
   z-index: 2;
-  transform: translate(-50%, -50%);
 }
-.cardinal-n { left: 49.2%; bottom: 3.5%; }
-.cardinal-s { left: 49.2%; top: 2.5%; }
-.cardinal-e { left: 2.5%; top: 48.4%; }
-.cardinal-w { right: 2.5%; top: 48.4%; transform: translate(50%, -50%); }
+.cardinal-s { left: 49%; top: 1.5%; transform: translateX(-50%); }
+.cardinal-n { left: 49%; bottom: 2%; transform: translateX(-50%); }
+.cardinal-e { left: 1%; top: 48%; }
+.cardinal-w { right: 1%; top: 48%; }
 
 .offline-placeholder {
   aspect-ratio: 1;
