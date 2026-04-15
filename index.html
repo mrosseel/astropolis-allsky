@@ -224,6 +224,7 @@ body {
   display: block;
   cursor: zoom-in;
   transition: filter 0.4s ease;
+  clip-path: circle(46.5% at 49.2% 48.4%);
 }
 
 .live-viewport .canvas-placeholder {
@@ -233,24 +234,6 @@ body {
 
 .live-viewport canvas:hover { filter: brightness(1.05); }
 
-/* ── CARDINAL DIRECTIONS ── */
-.cardinal {
-  position: absolute;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 600;
-  font-size: 0.6rem;
-  color: rgba(255,255,255,0.7);
-  pointer-events: none;
-  z-index: 2;
-  line-height: 1;
-}
-
-/* Dome circle: center 49.15%, 48.37%, radius 46.45% of image */
-/* Cardinals placed just outside the dome edge in the black border */
-.cardinal-s { left: 49.2%; top: 0.8%; transform: translateX(-50%); }
-.cardinal-n { left: 49.2%; top: 96%; transform: translateX(-50%); }
-.cardinal-e { left: 1.5%; top: 47.5%; }
-.cardinal-w { left: 96%; top: 47.5%; }
 
 .offline-placeholder {
   aspect-ratio: 1;
@@ -770,10 +753,6 @@ function renderHero() {
       <div class="live-viewport">
         <div class="canvas-placeholder" id="canvas-placeholder"></div>
         <canvas id="live-canvas" style="display:none" onclick="openFullscreen()"></canvas>
-        <span class="cardinal cardinal-n">N</span>
-        <span class="cardinal cardinal-s">S</span>
-        <span class="cardinal cardinal-e">E</span>
-        <span class="cardinal cardinal-w">W</span>
         <button class="live-expand" onclick="openFullscreen()" title="Volledig scherm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
