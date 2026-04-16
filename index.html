@@ -841,47 +841,9 @@ window.switchTab = function(tab) {
 function processAllskyImage(img) {
   const canvas = document.getElementById('live-canvas');
   if (!canvas || !img.naturalWidth) return;
-  const w = img.naturalWidth, h = img.naturalHeight;
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0);
-
-  try {
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const px = imageData.data;
-    const cx = w / 2, cy = h / 2;
-    const r = Math.min(cx, cy) * 0.945;
-    const rSq = r * r;
-    const cardinalR = w * 0.02;
-    const cardinals = [
-      [cx, h * 0.011],       // S (top)
-      [cx, h * 0.989],       // N (bottom)
-      [w * 0.014, cy],       // E (left)
-      [w * 0.986, cy]        // W (right)
-    ];
-
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const dx = x - cx, dy = y - cy;
-        const distSq = dx * dx + dy * dy;
-        if (distSq > rSq) {
-          const nearCardinal = cardinals.some(([cx2, cy2]) => {
-            const cdx = x - cx2, cdy = y - cy2;
-            return cdx * cdx + cdy * cdy < cardinalR * cardinalR;
-          });
-          if (!nearCardinal) {
-            const i = (y * w + x) * 4;
-            px[i + 3] = 0;
-          }
-        }
-      }
-    }
-    ctx.putImageData(imageData, 0, 0);
-  } catch (e) {
-    // CORS or processing error — canvas still shows the drawn image
-  }
-
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  canvas.getContext('2d').drawImage(img, 0, 0);
 }
 
 function showOfflinePlaceholder() {
