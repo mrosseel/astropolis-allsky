@@ -227,6 +227,26 @@ body {
   clip-path: circle(46.5% at 49.2% 48.4%);
 }
 
+/* ── CARDINAL DIRECTIONS ── */
+/* Dome circle: center 49.2% 48.4%, radius 46.5% */
+/* Cardinals placed at radius 49.5% (3% outside dome edge) */
+.cardinal {
+  position: absolute;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.6);
+  pointer-events: none;
+  z-index: 2;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+.cardinal-s { left: 49.2%; top: 1.4%; }
+.cardinal-n { left: 49.2%; top: 95.4%; }
+.cardinal-e { left: 2.2%; top: 48.4%; }
+.cardinal-w { left: 96.2%; top: 48.4%;
+}
+
 .live-viewport .canvas-placeholder {
   width: 100%;
   aspect-ratio: 1;
@@ -753,6 +773,10 @@ function renderHero() {
       <div class="live-viewport">
         <div class="canvas-placeholder" id="canvas-placeholder"></div>
         <canvas id="live-canvas" style="display:none" onclick="openFullscreen()"></canvas>
+        <span class="cardinal cardinal-s">S</span>
+        <span class="cardinal cardinal-n">N</span>
+        <span class="cardinal cardinal-e">E</span>
+        <span class="cardinal cardinal-w">W</span>
         <button class="live-expand" onclick="openFullscreen()" title="Volledig scherm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
