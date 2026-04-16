@@ -232,17 +232,20 @@ body {
 .cardinal {
   position: absolute;
   font-family: 'JetBrains Mono', monospace;
-  font-weight: 400;
-  font-size: 0.55rem;
-  letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.35);
+  font-weight: 500;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.45);
   pointer-events: none;
   z-index: 2;
   line-height: 1;
   transform: translate(-50%, -50%);
-  transition: color 0.3s ease;
+  transition: color 0.4s ease, text-shadow 0.4s ease;
 }
-.live-viewport:hover .cardinal { color: rgba(255,255,255,0.55); }
+.live-viewport:hover .cardinal {
+  color: rgba(255,255,255,0.75);
+  text-shadow: 0 0 8px rgba(51,153,102,0.4);
+}
 .cardinal-s { left: 49.2%; top: 0.8%; }
 .cardinal-n { left: 49.2%; top: 96%; }
 .cardinal-e { left: 1.5%; top: 48.4%; }
