@@ -872,12 +872,12 @@ function renderArchive() {
 }
 
 function render() {
-  app.innerHTML = renderHero() + renderArchive();
+  app.innerHTML = renderHero() + '<div id="archive">' + renderArchive() + '</div>';
 }
 
 window.switchTab = function(tab) {
   state.activeTab = tab;
-  render();
+  document.getElementById('archive').innerHTML = renderArchive();
 };
 
 // ── ALLSKY IMAGE PROCESSING ──
