@@ -173,10 +173,11 @@ body {
 .live-viewport {
   position: relative;
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
   box-shadow: none;
   border: none;
+  margin-top: 1.5rem;
 }
 
 .live-viewport::before { display: none; }
@@ -246,10 +247,10 @@ body {
   color: rgba(255,255,255,0.75);
   text-shadow: 0 0 8px rgba(51,153,102,0.4);
 }
-.cardinal-s { left: 49.2%; top: 2.5%; }
-.cardinal-n { left: 49.2%; top: 96%; }
-.cardinal-e { left: 1.5%; top: 48.4%; }
-.cardinal-w { left: 97%; top: 48.4%; }
+.cardinal-s { left: 49.2%; top: -1.1%; }
+.cardinal-n { left: 49.2%; top: 97.9%; }
+.cardinal-e { left: -0.3%; top: 48.4%; }
+.cardinal-w { left: 98.7%; top: 48.4%; }
 
 .live-viewport .canvas-placeholder {
   width: 100%;
