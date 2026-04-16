@@ -406,7 +406,7 @@ body {
 
 .file-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 1rem;
   padding: 0.6rem 0.9rem;
@@ -480,12 +480,23 @@ body {
 .file-badge.night { background: rgba(99,102,241,0.15); color: #a5b4fc; }
 .file-badge.day { background: rgba(234,179,8,0.15); color: #fbbf24; }
 
-.file-size {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
-  color: var(--text-dim);
-  white-space: nowrap;
+.file-preview {
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 0;
 }
+
+.file-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+.file-row:hover .file-preview img { opacity: 1; }
 
 /* ── OVERLAYS ── */
 .overlay {
@@ -591,8 +602,8 @@ body {
 
 @media (max-width: 600px) {
   .wrap { padding: 0 1rem; }
-  .file-row { grid-template-columns: 1fr auto; gap: 0.5rem; padding: 0.5rem 0.7rem; }
-  .file-badge { display: none; }
+  .file-row { grid-template-columns: auto 1fr auto; gap: 0.5rem; padding: 0.5rem 0.7rem; }
+  .file-preview { height: 16px; }
   .file-icon { width: 30px; height: 30px; font-size: 0.75rem; }
   .file-title { font-size: 0.78rem; }
   .tab-btn { font-size: 0.75rem; padding: 0.5rem 0.5rem; }
@@ -808,16 +819,19 @@ function renderFileRow(f, type, idx) {
     ? `openVideo('${f.url}', '${dateStr} \u2014 ${todLabel}')`
     : `openFullscreen('${f.url}')`;
 
+  const preview = !isVideo
+    ? `<div class="file-preview"><img src="${f.url}" loading="lazy" alt=""></div>`
+    : '';
+
   return `<div class="file-row" onclick="${action}" style="animation-delay:${Math.min(idx * 0.03, 0.5)}s">
     <div class="file-name">
       <div class="file-icon ${tod}">${isVideo ? '\u{25B6}' : todIcon}</div>
       <div class="file-label">
         <div class="file-title">${dateStr}</div>
-        <div class="file-sub">${todLabel}${isVideo ? ' timelapse' : ''}</div>
       </div>
     </div>
+    ${preview}
     <span class="file-badge ${tod}">${todLabel}</span>
-    <span class="file-size">${f.size}</span>
   </div>`;
 }
 
