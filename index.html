@@ -406,7 +406,7 @@ body {
 
 .file-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 3.5rem 14rem 1fr;
   align-items: center;
   gap: 1rem;
   padding: 0.6rem 0.9rem;
@@ -452,11 +452,10 @@ body {
 .file-title {
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  width: 14rem;
 }
 
 .file-sub {
@@ -472,9 +471,11 @@ body {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0;
   border-radius: 6px;
   white-space: nowrap;
+  width: 3.5rem;
+  text-align: center;
 }
 
 .file-badge.night { background: rgba(99,102,241,0.15); color: #a5b4fc; }
@@ -602,8 +603,10 @@ body {
 
 @media (max-width: 600px) {
   .wrap { padding: 0 1rem; }
-  .file-row { grid-template-columns: auto 1fr auto; gap: 0.5rem; padding: 0.5rem 0.7rem; }
-  .file-preview { height: 16px; }
+  .file-row { grid-template-columns: 3rem 1fr; gap: 0.5rem; padding: 0.5rem 0.7rem; }
+  .file-title { width: auto; font-size: 0.75rem; }
+  .file-preview { display: none; }
+  .file-badge { width: 3rem; font-size: 0.55rem; }
   .file-icon { width: 30px; height: 30px; font-size: 0.75rem; }
   .file-title { font-size: 0.78rem; }
   .tab-btn { font-size: 0.75rem; padding: 0.5rem 0.5rem; }
@@ -824,14 +827,9 @@ function renderFileRow(f, type, idx) {
     : '';
 
   return `<div class="file-row" onclick="${action}" style="animation-delay:${Math.min(idx * 0.03, 0.5)}s">
-    <div class="file-name">
-      <div class="file-icon ${tod}">${isVideo ? '\u{25B6}' : todIcon}</div>
-      <div class="file-label">
-        <div class="file-title">${dateStr}</div>
-      </div>
-    </div>
+    <span class="file-badge ${tod}">${isVideo ? '\u{25B6}' : todLabel}</span>
+    <span class="file-title">${dateStr}</span>
     ${preview}
-    <span class="file-badge ${tod}">${todLabel}</span>
   </div>`;
 }
 
