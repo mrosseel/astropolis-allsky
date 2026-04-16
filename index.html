@@ -228,24 +228,25 @@ body {
 }
 
 /* ── CARDINAL DIRECTIONS ── */
-/* Dome circle: center 49.2% 48.4%, radius 46.5% */
-/* Cardinals placed at radius 49.5% (3% outside dome edge) */
+/* Dome: center 49.2% 48.4%, radius 46.5% */
 .cardinal {
   position: absolute;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 600;
-  font-size: 0.65rem;
-  color: rgba(255,255,255,0.6);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.35);
   pointer-events: none;
   z-index: 2;
   line-height: 1;
   transform: translate(-50%, -50%);
+  transition: color 0.3s ease;
 }
-.cardinal-s { left: 49.2%; top: 1.4%; }
-.cardinal-n { left: 49.2%; top: 95.4%; }
-.cardinal-e { left: 2.2%; top: 48.4%; }
-.cardinal-w { left: 96.2%; top: 48.4%;
-}
+.live-viewport:hover .cardinal { color: rgba(255,255,255,0.55); }
+.cardinal-s { left: 49.2%; top: 0.8%; }
+.cardinal-n { left: 49.2%; top: 96%; }
+.cardinal-e { left: 1.5%; top: 48.4%; }
+.cardinal-w { left: 97%; top: 48.4%; }
 
 .live-viewport .canvas-placeholder {
   width: 100%;
