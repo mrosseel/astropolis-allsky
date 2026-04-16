@@ -822,9 +822,11 @@ function renderFileRow(f, type, idx) {
     ? `openVideo('${f.url}', '${dateStr} \u2014 ${todLabel}')`
     : `openFullscreen('${f.url}')`;
 
-  const preview = !isVideo
-    ? `<div class="file-preview"><img src="${f.url}" loading="lazy" alt=""></div>`
-    : '';
+  // For videos, show the matching keogram as preview
+  const previewUrl = isVideo
+    ? `${BASE}/keograms/allsky-keogram_ccd1_${d.dateStr.replace(/-/g, '')}_${tod}.jpg`
+    : f.url;
+  const preview = `<div class="file-preview"><img src="${previewUrl}" loading="lazy" alt=""></div>`;
 
   return `<div class="file-row" onclick="${action}" style="animation-delay:${Math.min(idx * 0.03, 0.5)}s">
     <span class="file-badge ${tod}">${isVideo ? '\u{25B6}' : todLabel}</span>
