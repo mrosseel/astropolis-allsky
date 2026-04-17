@@ -738,15 +738,26 @@ const vidPlayer = document.getElementById('vid-player');
 const vidTitle = document.getElementById('vid-title');
 const vidClose = document.getElementById('vid-close');
 
+function pushModalState(name) {
+  history.pushState({ modal: name }, '');
+}
+
+function popModalState() {
+  if (history.state && history.state.modal) history.back();
+}
+
 function openFullscreen(url) {
   fsImg.src = url || `${BASE}/image.jpg`;
   fsOverlay.classList.add('active');
   document.body.style.overflow = 'hidden';
+  pushModalState('fs');
 }
 
-function closeFullscreen() {
+function closeFullscreen(fromPopstate) {
+  if (!fsOverlay.classList.contains('active')) return;
   fsOverlay.classList.remove('active');
   document.body.style.overflow = '';
+  if (!fromPopstate) popModalState();
 }
 
 function openVideo(url, title) {
@@ -755,19 +766,27 @@ function openVideo(url, title) {
   vidOverlay.classList.add('active');
   document.body.style.overflow = 'hidden';
   vidPlayer.play();
+  pushModalState('vid');
 }
 
-function closeVideo() {
+function closeVideo(fromPopstate) {
+  if (!vidOverlay.classList.contains('active')) return;
   vidOverlay.classList.remove('active');
   vidPlayer.pause();
   vidPlayer.src = '';
   document.body.style.overflow = '';
+  if (!fromPopstate) popModalState();
 }
 
+window.addEventListener('popstate', () => {
+  if (fsOverlay.classList.contains('active')) closeFullscreen(true);
+  if (vidOverlay.classList.contains('active')) closeVideo(true);
+});
+
 fsOverlay.addEventListener('click', e => { if (e.target === fsOverlay) closeFullscreen(); });
-fsClose.addEventListener('click', closeFullscreen);
+fsClose.addEventListener('click', () => closeFullscreen());
 vidOverlay.addEventListener('click', e => { if (e.target === vidOverlay) closeVideo(); });
-vidClose.addEventListener('click', closeVideo);
+vidClose.addEventListener('click', () => closeVideo());
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeFullscreen(); closeVideo(); }
 });
