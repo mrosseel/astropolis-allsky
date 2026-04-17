@@ -134,8 +134,8 @@ body {
   display: grid;
   grid-template-columns: 340px 1fr;
   gap: 2.5rem;
-  align-items: start;
-  padding: 4rem 0 0;
+  align-items: center;
+  padding: 1rem 0 0;
 }
 
 .hero-text h1 {
@@ -828,7 +828,7 @@ function renderFileRow(f, type, idx) {
   const preview = `<div class="file-preview"><img src="${previewUrl}" loading="lazy" alt=""></div>`;
 
   return `<div class="file-row" onclick="${action}" style="animation-delay:${Math.min(idx * 0.03, 0.5)}s">
-    <span class="file-badge ${tod}">${isVideo ? '\u{25B6}' : todLabel}</span>
+    <span class="file-badge ${tod}">${todLabel}</span>
     <span class="file-title">${dateStr}</span>
     ${preview}
   </div>`;
