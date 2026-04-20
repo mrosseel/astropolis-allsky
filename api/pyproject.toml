@@ -1,0 +1,12 @@
+[project]
+name = "allsky-video-api"
+version = "0.1.0"
+description = "Clip-from-timelapse admin API for allsky.astropolis.be"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+]
+
+[tool.uv]
+package = false

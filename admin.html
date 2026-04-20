@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allsky Admin &middot; Clip tool</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --green: #339966;
+  --green-glow: rgba(51, 153, 102, 0.35);
+  --surface-0: #0b0e17;
+  --surface-1: #111525;
+  --surface-2: #181d30;
+  --surface-3: #1f2540;
+  --text: #e2e5ef;
+  --text-mid: #9ba2b8;
+  --text-dim: #5c6380;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --red: #ef4444;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--surface-0);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+header.top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.75rem;
+}
+
+header.top h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+header.top .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+header.top .spacer { flex: 1; }
+
+button, input, select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.btn {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--surface-3); border-color: var(--border-hover); }
+.btn.primary {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.btn.primary:hover { background: #2d8659; border-color: #2d8659; }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--red); }
+.btn.danger:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.card h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 1rem;
+}
+
+label.field {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+label.field > .lbl {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+input[type=text], input[type=password], input[type=number], select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  outline: none;
+  transition: border 0.15s;
+}
+input:focus, select:focus { border-color: var(--green); }
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.symmetric-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-mid);
+  font-size: 0.85rem;
+}
+.symmetric-row input { width: auto; }
+
+video {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+  background: #000;
+  margin-bottom: 0.75rem;
+}
+
+.scrubber-wrap {
+  position: relative;
+  height: 38px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 0.9rem;
+  overflow: hidden;
+}
+.scrubber-band {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(51,153,102,0.25);
+  border-left: 2px solid var(--green);
+  border-right: 2px solid var(--green);
+  pointer-events: none;
+}
+.scrubber-mid {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: #4fd1a0;
+  box-shadow: 0 0 6px rgba(79,209,160,0.8);
+  pointer-events: none;
+}
+.scrubber-now {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.6);
+  pointer-events: none;
+}
+.scrubber-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+}
+
+.hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.status {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: var(--surface-2);
+  color: var(--text-mid);
+}
+.status.ok { color: #4fd1a0; border: 1px solid rgba(79,209,160,0.25); background: rgba(79,209,160,0.08); }
+.status.err { color: var(--red); border: 1px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.08); }
+
+.clip-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+}
+.clip-meta .name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.clip-meta .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+  word-break: break-all;
+}
+.clip-actions { display: flex; gap: 0.35rem; }
+.clip-actions .btn { padding: 0.45rem 0.7rem; font-size: 0.75rem; }
+
+.login {
+  max-width: 360px;
+  margin: 6rem auto;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 600px) {
+  .wrap { padding: 1rem; }
+  .row { grid-template-columns: 1fr; }
+  .clip-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <h1>Allsky admin</h1>
+    <span class="sub">clip tool</span>
+    <span class="spacer"></span>
+    <button class="btn ghost" id="logout-btn" style="display:none">Uitloggen</button>
+  </header>
+
+  <section class="login card" id="login-card">
+    <h2>Login</h2>
+    <label class="field">
+      <span class="lbl">Wachtwoord</span>
+      <input type="password" id="pw-input" autocomplete="current-password">
+    </label>
+    <button class="btn primary" id="pw-submit">Inloggen</button>
+    <div class="status" id="pw-status" style="display:none"></div>
+  </section>
+
+  <div id="main" class="hidden">
+
+    <section class="card">
+      <h2>Bron</h2>
+      <label class="field">
+        <span class="lbl">Video</span>
+        <select id="source-select"><option>Laden…</option></select>
+      </label>
+
+      <video id="player" controls preload="metadata" playsinline></video>
+
+      <div class="scrubber-wrap" id="scrubber">
+        <div class="scrubber-band" id="sb-band"></div>
+        <div class="scrubber-mid" id="sb-mid"></div>
+        <div class="scrubber-now" id="sb-now"></div>
+      </div>
+      <div class="scrubber-labels">
+        <span>0s</span>
+        <span id="duration-label">–</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Selectie</h2>
+
+      <label class="field">
+        <span class="lbl">Middelpunt (s)</span>
+        <div style="display:flex; gap:0.5rem;">
+          <input type="number" id="center-input" step="0.1" min="0" value="0" style="flex:1">
+          <button class="btn" id="use-now-btn" type="button">Gebruik huidige positie</button>
+        </div>
+      </label>
+
+      <div class="row">
+        <label class="field">
+          <span class="lbl">Voor (s)</span>
+          <input type="number" id="before-input" step="0.1" min="0" value="3">
+        </label>
+        <label class="field">
+          <span class="lbl">Na (s)</span>
+          <input type="number" id="after-input" step="0.1" min="0" value="3">
+        </label>
+      </div>
+
+      <label class="symmetric-row">
+        <input type="checkbox" id="symmetric" checked>
+        <span>Symmetrisch (voor = na)</span>
+      </label>
+
+      <label class="field">
+        <span class="lbl">Label (optioneel)</span>
+        <input type="text" id="label-input" placeholder="bv. meteoor" maxlength="40">
+      </label>
+
+      <div class="hint" id="range-hint">–</div>
+
+      <div class="actions">
+        <button class="btn primary" id="render-btn">Clip maken</button>
+      </div>
+
+      <div class="status" id="render-status" style="display:none"></div>
+    </section>
+
+    <section class="card">
+      <h2>Clips</h2>
+      <div id="clip-list"><div class="hint">Laden…</div></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+const BASE = 'https://files.astropolis.be/public/allsky';
+const API = localStorage.getItem('allskyApiBase') || '/api';
+
+const $ = (id) => document.getElementById(id);
+
+function getPw() { return localStorage.getItem('allskyAdminPw') || ''; }
+function setPw(pw) { localStorage.setItem('allskyAdminPw', pw); }
+function clearPw() { localStorage.removeItem('allskyAdminPw'); }
+
+async function apiFetch(path, opts = {}) {
+  const headers = Object.assign({'X-Admin-Password': getPw()}, opts.headers || {});
+  if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const res = await fetch(API + path, Object.assign({}, opts, {headers}));
+  if (res.status === 401) {
+    clearPw();
+    showLogin('Sessie verlopen, log opnieuw in.');
+    throw new Error('unauthorized');
+  }
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`HTTP ${res.status}: ${t}`);
+  }
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('json') ? res.json() : res.text();
+}
+
+function showLogin(msg) {
+  $('login-card').classList.remove('hidden');
+  $('main').classList.add('hidden');
+  $('logout-btn').style.display = 'none';
+  if (msg) setStatus($('pw-status'), msg, 'err');
+}
+
+function showMain() {
+  $('login-card').classList.add('hidden');
+  $('main').classList.remove('hidden');
+  $('logout-btn').style.display = '';
+}
+
+function setStatus(el, msg, kind) {
+  el.textContent = msg;
+  el.className = 'status' + (kind ? ' ' + kind : '');
+  el.style.display = msg ? '' : 'none';
+}
+
+$('pw-submit').addEventListener('click', async () => {
+  const pw = $('pw-input').value;
+  setPw(pw);
+  try {
+    await apiFetch('/auth', {method: 'POST'});
+    setStatus($('pw-status'), '', null);
+    showMain();
+    initMain();
+  } catch {
+    clearPw();
+    setStatus($('pw-status'), 'Onjuist wachtwoord.', 'err');
+  }
+});
+$('pw-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('pw-submit').click(); });
+
+$('logout-btn').addEventListener('click', () => { clearPw(); showLogin(); });
+
+async function loadSources() {
+  const res = await fetch(`${BASE}/videos/`);
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const files = [];
+  doc.querySelectorAll('tr td a[href]').forEach((a) => {
+    const href = a.getAttribute('href');
+    if (!href.endsWith('.mp4') || href.includes('startrail_timelapse')) return;
+    files.push(a.textContent.trim());
+  });
+  files.sort().reverse();
+  const sel = $('source-select');
+  sel.innerHTML = files.map((f) => `<option value="${f}">${f}</option>`).join('');
+  if (files.length) loadVideo(files[0]);
+}
+
+function loadVideo(filename) {
+  const player = $('player');
+  player.src = `${BASE}/videos/${filename}`;
+  player.load();
+}
+
+$('source-select').addEventListener('change', (e) => loadVideo(e.target.value));
+
+const player = $('player');
+player.addEventListener('loadedmetadata', () => {
+  $('duration-label').textContent = player.duration.toFixed(1) + 's';
+  updateBand();
+});
+player.addEventListener('timeupdate', updateNow);
+
+function updateNow() {
+  const d = player.duration || 1;
+  const pct = (player.currentTime / d) * 100;
+  $('sb-now').style.left = pct + '%';
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function updateBand() {
+  const d = player.duration || 0;
+  if (!d) return;
+  const c = parseFloat($('center-input').value) || 0;
+  const b = parseFloat($('before-input').value) || 0;
+  const a = parseFloat($('after-input').value) || 0;
+  const start = clamp(c - b, 0, d);
+  const end = clamp(c + a, 0, d);
+  const bandL = (start / d) * 100;
+  const bandW = ((end - start) / d) * 100;
+  const band = $('sb-band');
+  band.style.left = bandL + '%';
+  band.style.width = bandW + '%';
+  $('sb-mid').style.left = (clamp(c, 0, d) / d) * 100 + '%';
+  $('range-hint').textContent =
+    `Clip: ${start.toFixed(2)}s → ${end.toFixed(2)}s (duur ${(end - start).toFixed(2)}s)`;
+}
+
+['center-input', 'before-input', 'after-input'].forEach((id) => {
+  $(id).addEventListener('input', (e) => {
+    if (id !== 'center-input' && $('symmetric').checked) {
+      const other = id === 'before-input' ? 'after-input' : 'before-input';
+      $(other).value = e.target.value;
+    }
+    updateBand();
+  });
+});
+
+$('symmetric').addEventListener('change', () => {
+  if ($('symmetric').checked) {
+    $('after-input').value = $('before-input').value;
+    updateBand();
+  }
+});
+
+$('use-now-btn').addEventListener('click', () => {
+  $('center-input').value = player.currentTime.toFixed(2);
+  updateBand();
+});
+
+$('scrubber').addEventListener('click', (e) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const d = player.duration || 0;
+  if (!d) return;
+  player.currentTime = clamp(pct * d, 0, d);
+});
+
+$('render-btn').addEventListener('click', async () => {
+  const btn = $('render-btn');
+  const status = $('render-status');
+  const body = {
+    source_filename: $('source-select').value,
+    center_s: parseFloat($('center-input').value) || 0,
+    before_s: parseFloat($('before-input').value) || 0,
+    after_s: parseFloat($('after-input').value) || 0,
+    label: $('label-input').value.trim() || null,
+  };
+  if (body.before_s + body.after_s <= 0) {
+    setStatus(status, 'Voor + na moet > 0 zijn.', 'err');
+    return;
+  }
+  btn.disabled = true;
+  setStatus(status, 'Bezig met renderen…');
+  try {
+    const meta = await apiFetch('/clip', {method: 'POST', body});
+    setStatus(status, 'Clip klaar: ' + meta.url, 'ok');
+    $('label-input').value = '';
+    loadClips();
+  } catch (err) {
+    setStatus(status, 'Mislukt: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+async function loadClips() {
+  const list = $('clip-list');
+  try {
+    const clips = await apiFetch('/clips');
+    if (!clips.length) {
+      list.innerHTML = '<div class="hint">Nog geen clips.</div>';
+      return;
+    }
+    list.innerHTML = clips.map((c) => `
+      <div class="clip-row">
+        <div class="clip-meta">
+          <div class="name">${c.label || c.filename}</div>
+          <div class="sub">${new Date(c.created).toLocaleString('nl-BE')} &middot; ${c.before_s}s / ${c.after_s}s rond ${c.center_s}s</div>
+          <div class="sub">${c.url}</div>
+        </div>
+        <div class="clip-actions">
+          <a class="btn" href="${c.url}" target="_blank" rel="noopener">Open</a>
+          <button class="btn" data-copy="${c.url}">Kopieer</button>
+          <button class="btn danger" data-del="${c.filename}">Verwijder</button>
+        </div>
+      </div>`).join('');
+    list.querySelectorAll('[data-copy]').forEach((b) => {
+      b.addEventListener('click', () => {
+        navigator.clipboard.writeText(b.dataset.copy);
+        b.textContent = 'Gekopieerd';
+        setTimeout(() => (b.textContent = 'Kopieer'), 1200);
+      });
+    });
+    list.querySelectorAll('[data-del]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        if (!confirm('Verwijderen?')) return;
+        await apiFetch('/clips/' + encodeURIComponent(b.dataset.del), {method: 'DELETE'});
+        loadClips();
+      });
+    });
+  } catch (err) {
+    list.innerHTML = `<div class="status err">${err.message}</div>`;
+  }
+}
+
+async function initMain() {
+  await loadSources();
+  await loadClips();
+}
+
+async function boot() {
+  if (!getPw()) { showLogin(); return; }
+  try {
+    await apiFetch('/auth', {method: 'POST'});
+    showMain();
+    initMain();
+  } catch {
+    showLogin();
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
