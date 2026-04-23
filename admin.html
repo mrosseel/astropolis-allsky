@@ -260,6 +260,56 @@ video {
 .clip-actions { display: flex; gap: 0.35rem; }
 .clip-actions .btn { padding: 0.45rem 0.7rem; font-size: 0.75rem; }
 
+.aspect-radio {
+  display: flex;
+  gap: 0.4rem;
+}
+.aspect-radio label {
+  flex: 1;
+  padding: 0.55rem 0.6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-mid);
+  transition: all 0.15s;
+}
+.aspect-radio input { display: none; }
+.aspect-radio label:has(input:checked) {
+  border-color: var(--green);
+  color: var(--text);
+  background: rgba(51,153,102,0.1);
+}
+
+.share-preview {
+  margin-top: 0.75rem;
+  background: #000;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  overflow: hidden;
+}
+.share-preview img { width: 100%; display: block; }
+.share-preview .hint { color: var(--text-dim); padding: 1rem; }
+
+.logo-current {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+.logo-current img { height: 32px; }
+.logo-current .hint { margin: 0; }
+
 .login {
   max-width: 360px;
   margin: 6rem auto;
@@ -360,6 +410,78 @@ video {
     <section class="card">
       <h2>Clips</h2>
       <div id="clip-list"><div class="hint">Laden…</div></div>
+    </section>
+
+    <section class="card hidden" id="share-card">
+      <h2>Deelclip maken</h2>
+
+      <label class="field">
+        <span class="lbl">Clip</span>
+        <input type="text" id="share-clip-name" readonly>
+      </label>
+
+      <label class="field">
+        <span class="lbl">Datum &amp; locatie</span>
+        <input type="text" id="share-datelocation" maxlength="120" placeholder="Oostende · 22 apr 2026 · 23:42">
+      </label>
+
+      <label class="symmetric-row">
+        <input type="checkbox" id="share-event-on">
+        <span>Event tonen</span>
+      </label>
+
+      <div id="share-event-fields" class="hidden">
+        <label class="field">
+          <span class="lbl">Event tekst</span>
+          <input type="text" id="share-event-text" maxlength="80" placeholder="bv. ISS pass">
+        </label>
+        <div class="row">
+          <label class="field">
+            <span class="lbl">Event start (s)</span>
+            <input type="number" id="share-event-start" step="0.1" min="0" value="0">
+          </label>
+          <label class="field">
+            <span class="lbl">Event eind (s)</span>
+            <input type="number" id="share-event-end" step="0.1" min="0" value="0">
+          </label>
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="lbl">Aspect</span>
+        <div class="aspect-radio">
+          <label><input type="radio" name="share-aspect" value="16:9" checked>16:9</label>
+          <label><input type="radio" name="share-aspect" value="9:16">9:16</label>
+          <label><input type="radio" name="share-aspect" value="1:1">1:1</label>
+        </div>
+      </label>
+
+      <div class="share-preview" id="share-preview">
+        <div class="hint">Klik Voorbeeld om een beeldje te renderen.</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="share-preview-btn">Voorbeeld</button>
+        <button class="btn primary" id="share-render-btn">Deelclip renderen</button>
+        <button class="btn ghost" id="share-close-btn">Sluiten</button>
+      </div>
+
+      <div class="status" id="share-status" style="display:none"></div>
+    </section>
+
+    <section class="card">
+      <h2>Logo</h2>
+      <div class="logo-current" id="logo-current">
+        <div class="hint">Geen logo geüpload.</div>
+      </div>
+      <label class="field">
+        <span class="lbl">Logo (SVG)</span>
+        <input type="file" id="logo-file" accept="image/svg+xml">
+      </label>
+      <div class="actions">
+        <button class="btn" id="logo-upload-btn">Uploaden</button>
+      </div>
+      <div class="status" id="logo-status" style="display:none"></div>
     </section>
 
   </div>
@@ -550,6 +672,7 @@ async function loadClips() {
   const list = $('clip-list');
   try {
     const clips = await apiFetch('/clips');
+    shareState.allClips = clips;
     if (!clips.length) {
       list.innerHTML = '<div class="hint">Nog geen clips.</div>';
       return;
@@ -564,6 +687,7 @@ async function loadClips() {
         <div class="clip-actions">
           <a class="btn" href="${c.url}" target="_blank" rel="noopener">Open</a>
           <button class="btn" data-copy="${c.url}">Kopieer</button>
+          <button class="btn" data-share="${c.filename}">Deelclip</button>
           <button class="btn danger" data-del="${c.filename}">Verwijder</button>
         </div>
       </div>`).join('');
@@ -573,6 +697,9 @@ async function loadClips() {
         b.textContent = 'Gekopieerd';
         setTimeout(() => (b.textContent = 'Kopieer'), 1200);
       });
+    });
+    list.querySelectorAll('[data-share]').forEach((b) => {
+      b.addEventListener('click', () => openShare(b.dataset.share));
     });
     list.querySelectorAll('[data-del]').forEach((b) => {
       b.addEventListener('click', async () => {
@@ -586,9 +713,143 @@ async function loadClips() {
   }
 }
 
+let shareState = { clip: null };
+
+const MONTHS_NL = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
+function formatDateFromTag(tag) {
+  if (!tag || tag.length !== 8) return '';
+  const y = tag.slice(0, 4), m = parseInt(tag.slice(4, 6), 10), d = parseInt(tag.slice(6, 8), 10);
+  if (!m || !d) return '';
+  return `${d} ${MONTHS_NL[m - 1]} ${y}`;
+}
+
+function clipDuration(clip) {
+  return (parseFloat(clip.before_s) || 0) + (parseFloat(clip.after_s) || 0);
+}
+
+function openShare(filename) {
+  const clipList = shareState.allClips || [];
+  const clip = clipList.find((c) => c.filename === filename);
+  if (!clip) return;
+  shareState.clip = clip;
+
+  const dur = clipDuration(clip);
+  const tagMatch = filename.match(/clip_(\d{8})_/);
+  const dateStr = tagMatch ? formatDateFromTag(tagMatch[1]) : '';
+  $('share-clip-name').value = filename;
+  $('share-datelocation').value = dateStr ? `Oostende · ${dateStr}` : 'Oostende';
+  $('share-event-on').checked = false;
+  $('share-event-fields').classList.add('hidden');
+  $('share-event-text').value = '';
+  $('share-event-start').value = '0';
+  $('share-event-start').max = dur.toFixed(1);
+  $('share-event-end').value = dur.toFixed(1);
+  $('share-event-end').max = dur.toFixed(1);
+  document.querySelector('input[name="share-aspect"][value="16:9"]').checked = true;
+  $('share-preview').innerHTML = '<div class="hint">Klik Voorbeeld om een beeldje te renderen.</div>';
+  setStatus($('share-status'), '', null);
+
+  $('share-card').classList.remove('hidden');
+  $('share-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+$('share-event-on').addEventListener('change', (e) => {
+  $('share-event-fields').classList.toggle('hidden', !e.target.checked);
+});
+
+$('share-close-btn').addEventListener('click', () => {
+  $('share-card').classList.add('hidden');
+  shareState.clip = null;
+});
+
+function buildShareBody() {
+  if (!shareState.clip) return null;
+  const aspect = document.querySelector('input[name="share-aspect"]:checked').value;
+  const body = {
+    clip_filename: shareState.clip.filename,
+    date_location: $('share-datelocation').value.trim(),
+    aspect,
+    event: null,
+  };
+  if ($('share-event-on').checked) {
+    const text = $('share-event-text').value.trim();
+    const startS = parseFloat($('share-event-start').value) || 0;
+    const endS = parseFloat($('share-event-end').value) || 0;
+    if (!text) throw new Error('Event tekst is leeg');
+    if (endS <= startS) throw new Error('Event eind moet groter zijn dan start');
+    body.event = { text, start_s: startS, end_s: endS };
+  }
+  return body;
+}
+
+$('share-preview-btn').addEventListener('click', async () => {
+  const btn = $('share-preview-btn');
+  const status = $('share-status');
+  let body;
+  try { body = buildShareBody(); } catch (err) { setStatus(status, err.message, 'err'); return; }
+  if (!body) return;
+  btn.disabled = true;
+  setStatus(status, 'Voorbeeld renderen…');
+  try {
+    const res = await apiFetch('/share-clip/preview', {method: 'POST', body});
+    $('share-preview').innerHTML = `<img src="${res.url}?t=${Date.now()}" alt="preview">`;
+    setStatus(status, 'Voorbeeld klaar.', 'ok');
+  } catch (err) {
+    setStatus(status, 'Voorbeeld mislukt: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$('share-render-btn').addEventListener('click', async () => {
+  const btn = $('share-render-btn');
+  const status = $('share-status');
+  let body;
+  try { body = buildShareBody(); } catch (err) { setStatus(status, err.message, 'err'); return; }
+  if (!body) return;
+  btn.disabled = true;
+  setStatus(status, 'Bezig met renderen (dit duurt even)…');
+  try {
+    const res = await apiFetch('/share-clip', {method: 'POST', body});
+    setStatus(status, 'Deelclip klaar: ' + res.url, 'ok');
+  } catch (err) {
+    setStatus(status, 'Render mislukt: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$('logo-upload-btn').addEventListener('click', async () => {
+  const fileInput = $('logo-file');
+  const status = $('logo-status');
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) { setStatus(status, 'Kies eerst een bestand.', 'err'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    setStatus(status, 'Uploaden…');
+    await apiFetch('/logo', {method: 'POST', body: fd});
+    setStatus(status, 'Logo geüpload.', 'ok');
+    showCurrentLogo();
+  } catch (err) {
+    setStatus(status, 'Upload mislukt: ' + err.message, 'err');
+  }
+});
+
+function showCurrentLogo() {
+  const el = $('logo-current');
+  const url = `${BASE}/logo.svg?t=${Date.now()}`;
+  const img = new Image();
+  img.onload = () => { el.innerHTML = `<img src="${url}" alt="logo"><div class="hint">Huidige logo</div>`; };
+  img.onerror = () => { el.innerHTML = '<div class="hint">Geen logo geüpload.</div>'; };
+  img.src = url;
+}
+
 async function initMain() {
   await loadSources();
   await loadClips();
+  showCurrentLogo();
 }
 
 async function boot() {
