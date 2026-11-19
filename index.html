@@ -558,6 +558,22 @@ body {
   animation: imgIn 0.3s ease;
 }
 
+.vid-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+.vid-actions a {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: rgba(255,255,255,0.8);
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+}
+.vid-actions a:hover { color: #fff; border-color: var(--green); }
+
+.tab-desc a { color: var(--green); text-decoration: none; }
+.tab-desc a:hover { color: #4fd1a0; }
+
 .vid-overlay .vid-title {
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
@@ -646,7 +662,11 @@ body {
 <div class="overlay vid-overlay" id="vid-overlay">
   <button class="overlay-close" id="vid-close">&times;</button>
   <span class="vid-title" id="vid-title"></span>
-  <video id="vid-player" controls></video>
+  <video id="vid-player" controls playsinline></video>
+  <div class="vid-actions">
+    <a id="vid-download" href="" download>Download volle resolutie</a>
+    <a id="vid-clip" href="moment.html">Clip maken uit deze video</a>
+  </div>
 </div>
 
 <footer class="footer">
@@ -737,6 +757,8 @@ const vidOverlay = document.getElementById('vid-overlay');
 const vidPlayer = document.getElementById('vid-player');
 const vidTitle = document.getElementById('vid-title');
 const vidClose = document.getElementById('vid-close');
+const vidDownload = document.getElementById('vid-download');
+const vidClip = document.getElementById('vid-clip');
 
 function pushModalState(name) {
   history.pushState({ modal: name }, '');
@@ -760,8 +782,15 @@ function closeFullscreen(fromPopstate) {
   if (!fromPopstate) popModalState();
 }
 
+// Play the 1080 px web copy when the server has made one; the download
+// link always gives the full-resolution video.
 function openVideo(url, title) {
-  vidPlayer.src = url;
+  const name = url.split('/').pop();
+  vidPlayer.src = state.webVideos.has(name) ? `${BASE}/videos/web/${name}` : url;
+  vidDownload.href = url;
+  const d = parseDateFromFilename(name);
+  const time = parseTimeOfDay(name) === 'night' ? '22:00:00' : '12:00:00';
+  vidClip.href = d ? `moment.html?date=${d.dateStr}&time=${time}` : 'moment.html';
   vidTitle.textContent = title;
   vidOverlay.classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -796,6 +825,7 @@ let state = {
   keograms: [],
   startrails: [],
   videos: [],
+  webVideos: new Set(),
   activeTab: 'keograms',
 };
 
@@ -869,7 +899,7 @@ function renderArchive() {
   const descriptions = {
     keograms: 'Een keogram vat een hele nacht of dag samen in \u00e9\u00e9n beeld door een smalle strook uit elk frame te nemen.',
     startrails: 'Star trails tonen de schijnbare beweging van sterren door lange belichtingen samen te voegen.',
-    videos: 'Timelapse opnames van de allsky camera, versneld weergegeven.'
+    videos: 'Timelapse opnames van de allsky camera, versneld weergegeven. <a href="moment.html">Maak een clip rond een bepaald moment &rarr;</a>'
   };
 
   return `
@@ -1015,16 +1045,19 @@ setInterval(refreshLive, LIVE_REFRESH);
 // ── INIT ──
 async function init() {
   try {
-    const [keogramHtml, startrailHtml, videoHtml] = await Promise.all([
+    const [keogramHtml, startrailHtml, videoHtml, webHtml] = await Promise.all([
       cachedFetch(`${BASE}/keograms/`),
       cachedFetch(`${BASE}/startrails/`),
       cachedFetch(`${BASE}/videos/`),
+      cachedFetch(`${BASE}/videos/web/`).catch(() => ''),
     ]);
 
-    state.keograms = parseFileList(keogramHtml, 'keograms');
-    state.startrails = parseFileList(startrailHtml, 'startrails');
+    // Unfinished uploads have a .tmp.<n> name; hide them.
+    state.keograms = parseFileList(keogramHtml, 'keograms').filter(f => f.name.endsWith('.jpg'));
+    state.startrails = parseFileList(startrailHtml, 'startrails').filter(f => f.name.endsWith('.jpg'));
     state.videos = parseFileList(videoHtml, 'videos')
-      .filter(f => !f.name.includes('startrail_timelapse'));
+      .filter(f => f.name.endsWith('.mp4') && !f.name.includes('startrail_timelapse'));
+    state.webVideos = new Set(parseFileList(webHtml, 'videos/web').map(f => f.name));
 
     render();
     refreshLive();

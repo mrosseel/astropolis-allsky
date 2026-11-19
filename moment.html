@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clip maken — Allsky Camera | Astropolis</title>
+<meta name="description" content="Kies een datum en tijd en maak een clip uit de allsky timelapse van Astropolis.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --green: #339966;
+  --surface-0: #0b0e17;
+  --surface-1: #111525;
+  --surface-2: #181d30;
+  --text: #e2e5ef;
+  --text-mid: #9ba2b8;
+  --text-dim: #5c6380;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --radius: 12px;
+  --warn: #d4a72c;
+  --err: #e5534b;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--surface-0);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+
+.header { padding: 1.25rem 0 0; }
+.logo-row { display: flex; align-items: center; gap: 1rem; }
+.logo-row a { display: flex; align-items: center; gap: 1rem; text-decoration: none; }
+.logo-row img { height: 44px; width: auto; filter: brightness(1.1); }
+.logo-row span {
+  font-family: 'Outfit', sans-serif; color: var(--text-dim); font-size: 0.8rem;
+  font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+h1 {
+  font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 800; color: #fff; letter-spacing: -0.03em; margin: 2rem 0 0.5rem;
+}
+.lead { color: var(--text-mid); margin-bottom: 1.75rem; max-width: 40rem; }
+
+.panel {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem;
+}
+
+.row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 1.1rem; }
+.row:last-child { margin-bottom: 0; }
+
+label {
+  display: block; font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 600;
+  color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.35rem;
+}
+
+input {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.5rem 0.65rem; color-scheme: dark;
+}
+input:focus { outline: none; border-color: var(--green); }
+input[type=number] { width: 6rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip {
+  font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 600;
+  padding: 0.45rem 0.8rem; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-mid); cursor: pointer;
+}
+.chip:hover { border-color: var(--border-hover); color: #fff; }
+.chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+
+.hint { font-size: 0.82rem; color: var(--text-dim); }
+.hint.warn { color: var(--warn); }
+.hint.err { color: var(--err); }
+
+.keograms { display: grid; gap: 0.6rem; }
+.keogram { position: relative; cursor: crosshair; }
+.keogram img { display: block; width: 100%; height: 70px; object-fit: fill; border-radius: 6px; }
+.keogram .kg-label { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem; }
+.keogram .kg-mark {
+  position: absolute; bottom: 0; width: 2px; height: 70px; background: #fff;
+  box-shadow: 0 0 6px #fff; pointer-events: none; display: none;
+}
+.keogram .kg-window {
+  position: absolute; bottom: 0; height: 70px; background: rgba(51,153,102,0.35);
+  border-left: 1px solid var(--green); border-right: 1px solid var(--green);
+  pointer-events: none; display: none;
+}
+
+.go {
+  font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff;
+  background: var(--green); border: none; border-radius: 10px; padding: 0.7rem 1.4rem; cursor: pointer;
+}
+.go:disabled { opacity: 0.5; cursor: wait; }
+
+.result video { width: 100%; max-height: 80vh; border-radius: 8px; background: #000; display: block; }
+.result .meta { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--text-mid); margin: 0.75rem 0; }
+.result .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.result a {
+  font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 600; text-decoration: none;
+  padding: 0.5rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); color: var(--text);
+}
+.result a.primary { background: var(--green); border-color: var(--green); color: #fff; }
+
+.spinner {
+  width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: var(--green);
+  border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle;
+  margin-right: 0.5rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.footer { text-align: center; padding: 2.5rem 1rem 2rem; font-size: 0.78rem; color: var(--text-dim); }
+.footer a { color: var(--green); text-decoration: none; }
+
+@media (max-width: 600px) { .wrap { padding: 0 1rem; } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="wrap">
+    <div class="logo-row">
+      <a href="/">
+        <img src="https://www.astropolis.be/wp-content/uploads/2024/04/Astropolis-logo-wit-doorzichtig.png" alt="Astropolis">
+        <span>Allsky Camera</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Clip maken</h1>
+  <p class="lead">Kies een moment en een venster. De server knipt die beelden uit de timelapse. Je bekijkt een kleinere versie en downloadt de clip in volle resolutie.</p>
+
+  <section class="panel">
+    <div class="row">
+      <div>
+        <label for="date">Datum</label>
+        <input type="date" id="date">
+      </div>
+      <div>
+        <label for="time">Tijd</label>
+        <input type="time" id="time" step="1" value="22:00:00">
+      </div>
+    </div>
+    <div class="row">
+      <div class="hint" id="coverage">&nbsp;</div>
+    </div>
+    <div class="row">
+      <div class="keograms" id="keograms" style="width:100%"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="row">
+      <div>
+        <label>Venster</label>
+        <div class="chips" id="window-presets">
+          <button class="chip" data-min="1">&plusmn;1 min</button>
+          <button class="chip" data-min="5">&plusmn;5 min</button>
+          <button class="chip active" data-min="10">&plusmn;10 min</button>
+          <button class="chip" data-min="15">&plusmn;15 min</button>
+          <button class="chip" data-min="30">&plusmn;30 min</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="before">Minuten ervoor</label>
+        <input type="number" id="before" min="0" max="120" step="0.5" value="10">
+      </div>
+      <div>
+        <label for="after">Minuten erna</label>
+        <input type="number" id="after" min="0" max="120" step="0.5" value="10">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Snelheid</label>
+        <div class="chips" id="fps-presets">
+          <button class="chip" data-fps="5">Traag</button>
+          <button class="chip active" data-fps="10">Normaal</button>
+          <button class="chip" data-fps="25">Snel</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="go" id="go">Maak clip</button>
+      <span class="hint" id="estimate"></span>
+    </div>
+  </section>
+
+  <section id="result"></section>
+</main>
+
+<footer class="footer">
+  <a href="/">Terug naar de allsky camera</a> &middot; <a href="https://www.astropolis.be">astropolis.be</a>
+</footer>
+
+<script>
+const BASE = 'https://files.astropolis.be/public/allsky';
+const API = '/api';
+const FRAME_S = 15;  // approximate capture interval, only for the estimate
+
+const $ = (id) => document.getElementById(id);
+const state = { fps: 10, indexes: {} };
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function isoDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+
+// Wall-clock time in Brussels for an epoch, whatever the browser time zone is.
+const brussels = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Brussels', year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+});
+function localParts(epoch) {
+  const p = Object.fromEntries(brussels.formatToParts(new Date(epoch * 1000)).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour === '24' ? '00' : p.hour}:${p.minute}:${p.second}` };
+}
+
+function hhmm(iso) { return iso.slice(11, 16); }
+
+function el(tag, attrs = {}, text) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function selectChip(group, btn) {
+  group.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c === btn));
+}
+
+function updateEstimate() {
+  const before = parseFloat($('before').value) || 0;
+  const after = parseFloat($('after').value) || 0;
+  const frames = Math.round(((before + after) * 60) / FRAME_S) + 1;
+  $('estimate').textContent = `ongeveer ${frames} beelden, ${(frames / state.fps).toFixed(1)} s video`;
+  drawMarks();
+}
+
+function windowPresetFromInputs() {
+  const b = $('before').value, a = $('after').value;
+  const match = [...$('window-presets').querySelectorAll('.chip')].find((c) => c.dataset.min === b && b === a);
+  selectChip($('window-presets'), match || null);
+}
+
+// ── Keograms: one column per frame, so a click maps to a frame and its time ──
+async function loadIndex(video) {
+  if (!state.indexes[video]) {
+    const stem = video.replace(/\.mp4$/, '');
+    state.indexes[video] = fetch(`${BASE}/videos/index/${stem}.json`).then((r) => r.ok ? r.json() : null);
+  }
+  return state.indexes[video];
+}
+
+function timeValue() {
+  const t = $('time').value;
+  return t.length === 5 ? t + ':00' : t;
+}
+
+// Epoch of the date and time inputs, read as Brussels time (CET or CEST).
+function selectedEpoch() {
+  const d = $('date').value, t = timeValue();
+  if (!d || !t) return null;
+  const asUtc = Date.parse(`${d}T${t}Z`) / 1000;
+  for (const off of [3600, 7200]) {
+    const p = localParts(asUtc - off);
+    if (p.date === d && p.time === t) return asUtc - off;
+  }
+  return asUtc - 3600;
+}
+
+function drawMarks() {
+  const center = selectedEpoch();
+  const before = (parseFloat($('before').value) || 0) * 60;
+  const after = (parseFloat($('after').value) || 0) * 60;
+  document.querySelectorAll('.keogram').forEach((kg) => {
+    const ix = kg._index;
+    const mark = kg.querySelector('.kg-mark'), win = kg.querySelector('.kg-window');
+    const pos = (epoch) => {
+      const t = ix.t;
+      if (epoch <= t[0]) return 0;
+      if (epoch >= t[t.length - 1]) return 1;
+      let lo = 0, hi = t.length - 1;
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (t[mid] <= epoch) lo = mid; else hi = mid; }
+      return lo / (t.length - 1);
+    };
+    const inside = ix && center !== null && center >= ix.t[0] && center <= ix.t[ix.t.length - 1];
+    mark.style.display = win.style.display = inside ? 'block' : 'none';
+    if (!inside) return;
+    const a = pos(center - before), b = pos(center + after);
+    mark.style.left = `${pos(center) * 100}%`;
+    win.style.left = `${a * 100}%`;
+    win.style.width = `${Math.max(0.3, (b - a) * 100)}%`;
+  });
+}
+
+async function loadCoverage() {
+  const d = $('date').value;
+  if (!d) return;
+  $('coverage').textContent = 'Beelden opzoeken…';
+  $('coverage').className = 'hint';
+  const box = $('keograms');
+  box.replaceChildren();
+  let data;
+  try {
+    const res = await fetch(`${API}/moment/coverage?date=${encodeURIComponent(d)}`);
+    data = await res.json();
+  } catch (e) {
+    $('coverage').textContent = 'Kon de beschikbare beelden niet ophalen.';
+    $('coverage').className = 'hint err';
+    return;
+  }
+  if (!data.videos.length) {
+    $('coverage').textContent = 'Geen timelapse beschikbaar voor deze datum.';
+    $('coverage').className = 'hint warn';
+    return;
+  }
+  $('coverage').textContent = 'Beschikbaar: ' + data.videos
+    .map((v) => `${v.start.slice(5, 10)} ${hhmm(v.start)} – ${v.end.slice(5, 10)} ${hhmm(v.end)}`)
+    .join(', ') + '. Klik op een keogram om een tijd te kiezen.';
+
+  for (const v of data.videos) {
+    const kgName = v.video.replace('allsky-timelapse_', 'allsky-keogram_').replace(/\.mp4$/, '.jpg');
+    const tod = v.video.includes('_night') ? 'Nacht' : 'Dag';
+    const kg = el('div', { class: 'keogram' });
+    kg.append(
+      el('div', { class: 'kg-label' }, `${tod} · ${hhmm(v.start)} – ${hhmm(v.end)}`),
+      el('img', { src: `${BASE}/keograms/${kgName}`, alt: `Keogram ${tod}` }),
+      el('div', { class: 'kg-window' }),
+      el('div', { class: 'kg-mark' }),
+    );
+    box.append(kg);
+    loadIndex(v.video).then((ix) => { kg._index = ix; drawMarks(); });
+    kg.querySelector('img').addEventListener('click', async (e) => {
+      const ix = await loadIndex(v.video);
+      if (!ix) return;
+      const r = e.target.getBoundingClientRect();
+      const frac = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const p = localParts(ix.t[Math.round(frac * (ix.t.length - 1))]);
+      $('time').value = p.time;
+      if (p.date !== $('date').value) { $('date').value = p.date; }
+      drawMarks();
+    });
+  }
+}
+
+async function makeClip() {
+  const body = {
+    date: $('date').value,
+    time: timeValue(),
+    before_min: parseFloat($('before').value) || 0,
+    after_min: parseFloat($('after').value) || 0,
+    fps: state.fps,
+  };
+  const out = $('result');
+  out.replaceChildren();
+  const panel = el('div', { class: 'panel result' });
+  out.append(panel);
+  const busy = el('div', { class: 'hint' });
+  busy.append(el('span', { class: 'spinner' }), document.createTextNode('Clip wordt gemaakt…'));
+  panel.append(busy);
+  $('go').disabled = true;
+  history.replaceState(null, '', `?date=${body.date}&time=${body.time}&before=${body.before_min}&after=${body.after_min}&fps=${body.fps}`);
+
+  try {
+    const res = await fetch(`${API}/moment`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const d = data.detail;
+      const msg = typeof d === 'string' ? d : d && d.message ? d.message : 'Ongeldige invoer.';
+      panel.replaceChildren(el('div', { class: 'hint err' }, msg));
+      return;
+    }
+    const video = el('video', { controls: '', autoplay: '', loop: '', muted: '', playsinline: '' });
+    video.muted = true;
+    video.src = data.view_url;
+    const meta = el('div', { class: 'meta' },
+      `${data.start.slice(0, 10)} ${data.start.slice(11, 19)} – ${data.end.slice(11, 19)} · ${data.frames} beelden · ${data.duration_s} s`);
+    const actions = el('div', { class: 'actions' });
+    const dl = el('a', { class: 'primary', href: data.full_url, download: '' }, 'Download volle resolutie');
+    const dlView = el('a', { href: data.view_url, download: '' }, 'Download 1080p');
+    actions.append(dl, dlView);
+    panel.replaceChildren(video, meta, actions);
+    if (data.clamped) {
+      panel.insertBefore(el('div', { class: 'hint warn' },
+        'Het venster loopt buiten deze timelapse. De clip bevat alleen de beschikbare beelden.'), actions);
+    }
+  } catch (e) {
+    panel.replaceChildren(el('div', { class: 'hint err' }, 'De server antwoordt niet. Probeer later opnieuw.'));
+  } finally {
+    $('go').disabled = false;
+  }
+}
+
+// ── Wiring ──
+$('window-presets').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  selectChip($('window-presets'), b);
+  $('before').value = $('after').value = b.dataset.min;
+  updateEstimate();
+});
+$('fps-presets').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  selectChip($('fps-presets'), b);
+  state.fps = parseInt(b.dataset.fps, 10);
+  updateEstimate();
+});
+['before', 'after'].forEach((id) => $(id).addEventListener('input', () => { windowPresetFromInputs(); updateEstimate(); }));
+$('time').addEventListener('input', drawMarks);
+$('date').addEventListener('change', loadCoverage);
+$('go').addEventListener('click', makeClip);
+
+const params = new URLSearchParams(location.search);
+const yesterday = new Date(Date.now() - 86400000);
+$('date').value = params.get('date') || isoDate(yesterday);
+if (params.get('time')) $('time').value = params.get('time');
+if (params.get('before')) $('before').value = params.get('before');
+if (params.get('after')) $('after').value = params.get('after');
+if (params.get('fps')) {
+  const b = $('fps-presets').querySelector(`[data-fps="${params.get('fps')}"]`);
+  if (b) { selectChip($('fps-presets'), b); state.fps = parseInt(b.dataset.fps, 10); }
+}
+windowPresetFromInputs();
+updateEstimate();
+loadCoverage();
+</script>
+</body>
+</html>

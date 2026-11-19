@@ -1,13 +1,18 @@
 [project]
-name = "allsky-video-api"
-version = "0.1.0"
-description = "Clip-from-timelapse admin API for allsky.astropolis.be"
+name = "allsky-moment-api"
+version = "0.2.0"
+description = "Cut a clip around a date and time from the allsky timelapse"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
-    "python-multipart>=0.0.9",
 ]
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27"]
 
 [tool.uv]
 package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
