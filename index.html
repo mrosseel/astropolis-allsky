@@ -681,6 +681,7 @@ const app = document.getElementById('app');
 
 const MONTHS_NL = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
 const DAYS_NL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+const CAMERA_TZ = 'Europe/Brussels';
 
 const cache = {};
 
@@ -1005,10 +1006,12 @@ function setLiveStatus(online, lastMod) {
     const ago = lastMod ? timeAgo(new Date(lastMod)) : '';
     txt.innerHTML = `<span class="live-status-label--online">Live</span>${ago ? ' &middot; ' + ago : ''} &middot; ververst elke 60s`;
     if (ts && lastMod) {
+      // Show the camera's local time (Oostende), not the visitor's.
       const d = new Date(lastMod);
-      const day = DAYS_NL[d.getDay()];
-      const monthDay = `${d.getDate()} ${MONTHS_NL[d.getMonth()]}`;
-      const time = d.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+      const tz = { timeZone: CAMERA_TZ };
+      const day = d.toLocaleDateString('nl-BE', { ...tz, weekday: 'long' });
+      const monthDay = d.toLocaleDateString('nl-BE', { ...tz, day: 'numeric', month: 'long' });
+      const time = d.toLocaleTimeString('nl-BE', { ...tz, hour: '2-digit', minute: '2-digit' });
       ts.innerHTML = `${day} ${monthDay}<span class="live-timestamp-time">${time}</span>`;
       ts.style.display = '';
     }
